@@ -372,67 +372,69 @@
 
       // Load data function
       async function loadData(csvText = null) {
-  try {
-    let csvData;
-
-    if (csvText) {
-      // If CSV text is provided directly (from file upload)
-      csvData = csvText;
-    } else {
-      // Try to check for CSV files in folder first
-      const csvFiles = [
-        "comprehensive_partial_correlations.csv",
-      ];
-      
-      let fileFound = false;
-      
-      for (const fileName of csvFiles) {
-        try {
-          csvData = await window.fs.readFile(fileName, { encoding: "utf8" });
-          console.log(`✅ Found and loaded: ${fileName}`);
-          document.getElementById("fileStatus").textContent = `✅ Auto-loaded: ${fileName}`;
-          document.getElementById("fileStatus").style.color = "#27ae60";
-          fileFound = true;
-          break; // Use the first file found
-        } catch (error) {
-          console.log(`❌ File not found: ${fileName}`);
-          continue; // Try next file
-        }
-      }
-      
-      if (!fileFound) {
-        // No CSV files found - show upload prompt
-        document.getElementById("network").innerHTML = 
-          '<div class="no-data" style="padding: 40px; text-align: center; color: #7f8c8d;">' +
-          '<h3>📁 No CSV files detected in folder</h3>' +
-          '<p>Please upload the csv containing partial correlations:</p>' +
-          '<ul style="list-style: none; padding: 0;">' +
-          '</div>';
+      try {
+        let csvData;
+    
+        if (csvText) {
+          csvData = csvText;
+        } else {
+          // Use fetch to load CSV from GitHub Pages
+          const csvFiles = [
+            "comprehensive_partial_correlations.csv",
+          ];
           
-        document.getElementById("fileStatus").textContent = "⚠️ No CSV files found - please upload";
-        document.getElementById("fileStatus").style.color = "#f39c12";
+          let fileFound = false;
+          
+          for (const fileName of csvFiles) {
+            try {
+              const response = await fetch(fileName);
+              if (response.ok) {
+                csvData = await response.text();
+                console.log(`✅ Found and loaded: ${fileName}`);
+                document.getElementById("fileStatus").textContent = `✅ Auto-loaded: ${fileName}`;
+                document.getElementById("fileStatus").style.color = "#27ae60";
+                fileFound = true;
+                break;
+              }
+            } catch (error) {
+              console.log(`❌ File not found: ${fileName}`);
+              continue;
+            }
+          }
+          
+          if (!fileFound) {
+            // No CSV files found - show upload prompt
+            document.getElementById("network").innerHTML = 
+              '<div class="no-data" style="padding: 40px; text-align: center; color: #7f8c8d;">' +
+              '<h3>📁 No CSV files detected in folder</h3>' +
+              '<p>Please upload the csv containing partial correlations:</p>' +
+              '<ul style="list-style: none; padding: 0;">' +
+              '</div>';
+              
+            document.getElementById("fileStatus").textContent = "⚠️ No CSV files found - please upload";
+            document.getElementById("fileStatus").style.color = "#f39c12";
+            return [];
+          }
+        }
+    
+        const data = parseCSV(csvData);
+        allData = data;
+    
+        if (!csvText) { // Only update status if we auto-loaded (not from upload)
+          document.getElementById("fileStatus").textContent = `✅ Loaded ${data.length} edges successfully`;
+          document.getElementById("fileStatus").style.color = "#27ae60";
+        }
+    
+        return filterDataByGroup(currentGroup);
+        
+      } catch (error) {
+        console.error("Error loading data:", error);
+        document.getElementById("fileStatus").textContent = 
+          "❌ Error loading data. Please check file format.";
+        document.getElementById("fileStatus").style.color = "#e74c3c";
         return [];
       }
     }
-
-    const data = parseCSV(csvData);
-    allData = data;
-
-    if (!csvText) { // Only update status if we auto-loaded (not from upload)
-      document.getElementById("fileStatus").textContent = `✅ Loaded ${data.length} edges successfully`;
-      document.getElementById("fileStatus").style.color = "#27ae60";
-    }
-
-    return filterDataByGroup(currentGroup);
-    
-  } catch (error) {
-    console.error("Error loading data:", error);
-    document.getElementById("fileStatus").textContent = 
-      "❌ Error loading data. Please check file format.";
-    document.getElementById("fileStatus").style.color = "#e74c3c";
-    return [];
-  }
-}
 
 
       // Filter data by group
