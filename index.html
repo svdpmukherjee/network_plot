@@ -153,7 +153,7 @@
               min="0"
               max="0.8"
               step="0.01"
-              value="0.1"
+              value="0.3"
             />
             Edge threshold: <span id="thresholdValue">0.1</span>
           </label>
@@ -250,9 +250,9 @@
         "perceived_injunctive_norms",
         "perceived_group_identification",
         "perceived_social_sanctions",
-        "perceived_honesty",
-        "perceived_performance_effect",
-        "perceived_experience_effect",
+        // "perceived_honesty",
+        // "perceived_performance_effect",
+        // "perceived_experience_effect",
       ];
 
       const OUTCOMES = ["cheating_behavior", "performance", "experience"];
@@ -269,7 +269,7 @@
             "relatedness_need_satisfaction",
             "relatedness_need_frustration",
           ],
-          color: "#3498db",
+          color: "#1f77b4",
         },
         "Cognitive-Dissonance": {
           concepts: [
@@ -279,7 +279,7 @@
             "dissonance_reduction",
           ],
           mechanisms: ["cognitive_discomfort", "moral_disengagement"],
-          color: "#e74c3c",
+          color: "#ff7f0e",
         },
         "Self-Efficacy": {
           concepts: [
@@ -294,7 +294,7 @@
             "perceived_verbal_persuasion",
             "perceived_emotional_arousal",
           ],
-          color: "#27ae60",
+          color: "#9467bd",
         },
         "Social-Norms": {
           concepts: [
@@ -309,17 +309,17 @@
             "perceived_group_identification",
             "perceived_social_sanctions",
           ],
-          color: "#f39c12",
+          color: "#17becf",
         },
-        "Perceived-Effectiveness": {
-          concepts: [],
-          mechanisms: [
-            "perceived_honesty",
-            "perceived_performance_effect",
-            "perceived_experience_effect",
-          ],
-          color: "#9b59b6",
-        },
+        // "Perceived-Effectiveness": {
+        //   concepts: [],
+        //   mechanisms: [
+        //     "perceived_honesty",
+        //     "perceived_performance_effect",
+        //     "perceived_experience_effect",
+        //   ],
+        //   color: "#9b59b6",
+        // },
       };
 
       // Create node-to-theory mapping
@@ -335,11 +335,45 @@
       });
 
       // Color functions
+      // function getNodeColor(node, type) {
+      //   if (OUTCOMES.includes(node)) return "#34495e";
+      //   const nodeInfo = nodeToTheory[node];
+      //   if (!nodeInfo) return "#95a5a6";
+      //   return theoryGroups[nodeInfo.theory].color;
+      // }
+      // Color functions
       function getNodeColor(node, type) {
         if (OUTCOMES.includes(node)) return "#34495e";
         const nodeInfo = nodeToTheory[node];
         if (!nodeInfo) return "#95a5a6";
-        return theoryGroups[nodeInfo.theory].color;
+
+        const baseColor = theoryGroups[nodeInfo.theory].color;
+
+        // Return lighter shade for mechanisms (middle ring)
+        if (type === "mechanism") {
+          return lightenColor(baseColor, 0.3); // 30% lighter
+        }
+
+        return baseColor; // Original color for concepts
+      }
+
+      // Helper function to lighten colors
+      function lightenColor(color, amount) {
+        // Convert hex to RGB
+        const hex = color.replace("#", "");
+        const r = parseInt(hex.substr(0, 2), 16);
+        const g = parseInt(hex.substr(2, 2), 16);
+        const b = parseInt(hex.substr(4, 2), 16);
+
+        // Lighten each component
+        const newR = Math.min(255, Math.round(r + (255 - r) * amount));
+        const newG = Math.min(255, Math.round(g + (255 - g) * amount));
+        const newB = Math.min(255, Math.round(b + (255 - b) * amount));
+
+        // Convert back to hex
+        return `#${newR.toString(16).padStart(2, "0")}${newG
+          .toString(16)
+          .padStart(2, "0")}${newB.toString(16).padStart(2, "0")}`;
       }
 
       function getNodeSize(node, type) {
@@ -372,70 +406,72 @@
 
       // Load data function
       async function loadData(csvText = null) {
-      try {
-        let csvData;
-    
-        if (csvText) {
-          csvData = csvText;
-        } else {
-          // Use fetch to load CSV from GitHub Pages
-          const csvFiles = [
-            "comprehensive_partial_correlations.csv",
-          ];
-          
-          let fileFound = false;
-          
-          for (const fileName of csvFiles) {
-            try {
-              const response = await fetch(fileName);
-              if (response.ok) {
-                csvData = await response.text();
+        try {
+          let csvData;
+
+          if (csvText) {
+            // If CSV text is provided directly (from file upload)
+            csvData = csvText;
+          } else {
+            // Try to check for CSV files in folder first
+            const csvFiles = ["comprehensive_partial_correlations.csv"];
+
+            let fileFound = false;
+
+            for (const fileName of csvFiles) {
+              try {
+                csvData = await window.fs.readFile(fileName, {
+                  encoding: "utf8",
+                });
                 console.log(`✅ Found and loaded: ${fileName}`);
-                document.getElementById("fileStatus").textContent = `✅ Auto-loaded: ${fileName}`;
+                document.getElementById(
+                  "fileStatus"
+                ).textContent = `✅ Auto-loaded: ${fileName}`;
                 document.getElementById("fileStatus").style.color = "#27ae60";
                 fileFound = true;
-                break;
+                break; // Use the first file found
+              } catch (error) {
+                console.log(`❌ File not found: ${fileName}`);
+                continue; // Try next file
               }
-            } catch (error) {
-              console.log(`❌ File not found: ${fileName}`);
-              continue;
+            }
+
+            if (!fileFound) {
+              // No CSV files found - show upload prompt
+              document.getElementById("network").innerHTML =
+                '<div class="no-data" style="padding: 40px; text-align: center; color: #7f8c8d;">' +
+                "<h3>📁 No CSV files detected in folder</h3>" +
+                "<p>Please upload the csv containing partial correlations:</p>" +
+                '<ul style="list-style: none; padding: 0;">' +
+                "</div>";
+
+              document.getElementById("fileStatus").textContent =
+                "⚠️ No CSV files found - please upload";
+              document.getElementById("fileStatus").style.color = "#f39c12";
+              return [];
             }
           }
-          
-          if (!fileFound) {
-            // No CSV files found - show upload prompt
-            document.getElementById("network").innerHTML = 
-              '<div class="no-data" style="padding: 40px; text-align: center; color: #7f8c8d;">' +
-              '<h3>📁 No CSV files detected in folder</h3>' +
-              '<p>Please upload the csv containing partial correlations:</p>' +
-              '<ul style="list-style: none; padding: 0;">' +
-              '</div>';
-              
-            document.getElementById("fileStatus").textContent = "⚠️ No CSV files found - please upload";
-            document.getElementById("fileStatus").style.color = "#f39c12";
-            return [];
-          }
-        }
-    
-        const data = parseCSV(csvData);
-        allData = data;
-    
-        if (!csvText) { // Only update status if we auto-loaded (not from upload)
-          document.getElementById("fileStatus").textContent = `✅ Loaded ${data.length} edges successfully`;
-          document.getElementById("fileStatus").style.color = "#27ae60";
-        }
-    
-        return filterDataByGroup(currentGroup);
-        
-      } catch (error) {
-        console.error("Error loading data:", error);
-        document.getElementById("fileStatus").textContent = 
-          "❌ Error loading data. Please check file format.";
-        document.getElementById("fileStatus").style.color = "#e74c3c";
-        return [];
-      }
-    }
 
+          const data = parseCSV(csvData);
+          allData = data;
+
+          if (!csvText) {
+            // Only update status if we auto-loaded (not from upload)
+            document.getElementById(
+              "fileStatus"
+            ).textContent = `✅ Loaded ${data.length} edges successfully`;
+            document.getElementById("fileStatus").style.color = "#27ae60";
+          }
+
+          return filterDataByGroup(currentGroup);
+        } catch (error) {
+          console.error("Error loading data:", error);
+          document.getElementById("fileStatus").textContent =
+            "❌ Error loading data. Please check file format.";
+          document.getElementById("fileStatus").style.color = "#e74c3c";
+          return [];
+        }
+      }
 
       // Filter data by group
       function filterDataByGroup(group) {
@@ -463,7 +499,10 @@
         d3.select("#network").select("svg").remove();
 
         // Create all nodes from our predefined lists
-        const allNodes = [...CONCEPTS, ...MECHANISMS, ...OUTCOMES];
+        let allNodes = [...CONCEPTS, ...MECHANISMS, ...OUTCOMES];
+        if (currentGroup !== "All") {
+          allNodes = allNodes.filter((id) => id !== "cheating_behavior");
+        }
         const nodes = allNodes.map((id) => {
           let type;
           if (OUTCOMES.includes(id)) type = "outcome";
@@ -599,11 +638,18 @@
             const typeAllowed =
               (isPositive && showPositive) || (!isPositive && showNegative);
 
+            // Hide edges connected to cheating_behavior when not showing "All" groups
+            const nodeVisible =
+              currentGroup === "All" ||
+              (d.source !== "cheating_behavior" &&
+                d.target !== "cheating_behavior");
+
             return (
               meetsThreshold &&
               typeAllowed &&
               nodeMap[d.source] &&
-              nodeMap[d.target]
+              nodeMap[d.target] &&
+              nodeVisible
             );
           });
 
