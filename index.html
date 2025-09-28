@@ -566,8 +566,8 @@
         // Position nodes in 3 concentric circles
         const centerX = width / 2;
         const centerY = height / 2;
-        const outerRadius = Math.min(width, height) * 0.45; // concepts at edge
-        const middleRadius = Math.min(width, height) * 0.3; // mechanisms in middle
+        const outerRadius = Math.min(width, height) * 0.35; // concepts at edge
+        const middleRadius = Math.min(width, height) * 0.25; // mechanisms in middle
         const innerRadius = Math.min(width, height) * 0.1; // outcomes at center
 
         // Position concepts on outer circle
@@ -801,10 +801,23 @@
           .append("text")
           .attr("class", "node-label")
           .attr("x", (d) => d.x)
-          .attr("y", (d) => d.y - d.size - 5)
-          .text((d) => d.id.replace(/_/g, " "))
+          .attr("y", (d) => d.y - d.size - 15)
           .style("font-size", (d) => (d.type === "outcome" ? "15px" : "13px"))
-          .style("font-weight", (d) => (d.type === "outcome" ? "bold" : "400"));
+          .style("font-weight", (d) => (d.type === "outcome" ? "bold" : "400"))
+          .each(function (d) {
+            const name = d.id.replace(/_/g, " ");
+            const words = name.split(" "); // Split at every space
+            const lineHeight = d.type === "outcome" ? 16 : 14;
+
+            // Create a tspan for each word (each word on its own line)
+            words.forEach((word, i) => {
+              d3.select(this)
+                .append("tspan")
+                .attr("x", d.x)
+                .attr("dy", i === 0 ? 0 : lineHeight)
+                .text(word);
+            });
+          });
 
         // Store update function and labels for external use
         window.updateVisualization = updateVisualization;
